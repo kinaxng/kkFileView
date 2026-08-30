@@ -1,0 +1,59 @@
+name: Build kkfileview-base
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 1'   # 每周一 03:00 UTC 触发（看上游 base 目录是否变）
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-base:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Detect upstream base Dockerfile changes
+        id: detect
+        run: |
+          # 比对 fork 和 upstream 的 docker/kkfileview-base/Dockerfile
+          git fetch --depth=1 https://github.com/kekingcn/kkFileView.git upstream master
+          LOCAL=$(sha256sum docker/kkfileview-base/Dockerfile | awk '{print $1}')
+          UPSTREAM=$(sha256sum <(git show upstream/master:docker/kkfileview-base/Dockerfile) | awk '{print $1}')
+          if [ "$LOCAL" = "$UPSTREAM" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip if upstream base unchanged and image exists
+        if: steps.detect.outputs.changed == 'false'
+        run: |
+          if docker buildx imagetools inspect ghcr.io/${{ github.repository_owner }}/kkfileview-base:5.0.0 > /dev/null 2>&1; then
+            echo "Base unchanged and image exists, skipping rebuild"
+            exit 0
+          fi
+
+      - name: Build & push base image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./docker/kkfileview-base
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/kkfileview-base:5.0.0
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
