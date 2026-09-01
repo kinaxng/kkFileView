@@ -37,6 +37,14 @@ jobs:
         run: |
           ls -la server/target/kkFileView-*.tar.gz || (echo "Build failed: no tar.gz" && exit 1)
 
+      - name: Upload tar.gz as artifact (90 days retention)
+        uses: actions/upload-artifact@v4
+        with:
+          name: kkfileview-5.0.2-build
+          path: server/target/kkFileView-*.tar.gz
+          if-no-files-found: error
+          retention-days: 90
+
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
