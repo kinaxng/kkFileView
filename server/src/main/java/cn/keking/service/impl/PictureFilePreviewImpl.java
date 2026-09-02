@@ -3,6 +3,7 @@ package cn.keking.service.impl;
 import cn.keking.model.FileAttribute;
 import cn.keking.service.FileHandlerService;
 import cn.keking.utils.KkFileUtils;
+import cn.keking.utils.PanoramaDetector;
 import org.springframework.stereotype.Service;
 import org.springframework.ui.Model;
 import org.springframework.util.CollectionUtils;
@@ -47,8 +48,11 @@ public class PictureFilePreviewImpl extends CommonPreviewImpl {
         }
         if(suffix.equalsIgnoreCase("heic")||suffix.equalsIgnoreCase("heif")){
             return HEIC_FILE_PREVIEW_PAGE;
-        }else {
-            return PICTURE_FILE_PREVIEW_PAGE;
         }
+        // kinax: 2:1 宽高比嗅探 → 等距全景图预览；非 2:1 回落到普通图片预览
+        if (PanoramaDetector.isPanorama(url, suffix)) {
+            return PANORAMA_FILE_PREVIEW_PAGE;
+        }
+        return PICTURE_FILE_PREVIEW_PAGE;
     }
 }
