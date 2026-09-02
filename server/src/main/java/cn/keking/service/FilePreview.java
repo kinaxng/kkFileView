@@ -38,6 +38,8 @@ public interface FilePreview {
     String HEIC_FILE_PREVIEW_PAGE = "heic";
     String CADVIEWER_FILE_PREVIEW_PAGE = "cadviewer";
     String WAITING_FILE_PREVIEW_PAGE = "waiting";
+    // kinax: 2:1 等距全景图预览（Pannellum 渲染）
+    String PANORAMA_FILE_PREVIEW_PAGE = "panorama";
 
     String filePreviewHandle(String url, Model model, FileAttribute fileAttribute);
 }
